@@ -1,60 +1,108 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const ProductList = ({ onAddToCart }) => {
+function ProductList() {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState(['Electronics', 'Books', 'Clothing']);
-  const [selectedCategory, setSelectedCategory] = useState('Electronics');
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchProducts();
-  }, [selectedCategory]);
+    // Initialize products
+    fetch('http://localhost:8080/api/products/initialize', {
+      method: 'POST'
+    }).then(() => {
+      fetchProducts();
+    }).catch(err => {
+      console.error('Error initializing products:', err);
+      fetchProducts();
+    });
+
+    // Load cart from localStorage
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+  }, []);
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/products/category/${selectedCategory}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data);
+      const response = await fetch('http://localhost:8080/api/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
       }
-    } catch (error) {
-      console.error('Error fetching products:', error);
+      const data = await response.json();
+      setProducts(data);
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to load products');
+      setLoading(false);
+      console.error('Error fetching products:', err);
     }
   };
 
-  return (
-    <div className="products-container">
-      <div className="category-filter">
-        <h3>Categories</h3>
-        <select 
-          value={selectedCategory} 
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          {categories.map(category => (
-            <option key={category} value={category}>{category}</option>
-          ))}
-        </select>
-      </div>
+  const addToCart = (product) => {
+    const updatedCart = [...cart, product];
+    setCart(updatedCart);
+    localStorage.setItem('cart', JSON.stringify(updatedCart));
+  };
 
-      <div className="products-grid">
-        {products.map(product => {
-          const attrs = product.attributes;
-          return (
-            <div key={product.pk} className="product-card">
-              <h3>{attrs.name}</h3>
-              <p className="price">${attrs.price}</p>
-              <p>Stock: {attrs.stock}</p>
-              <button 
-                onClick={() => onAddToCart(product)}
-                disabled={attrs.stock <= 0}
+  const goToCheckout = () => {
+    window.location.href = '/checkout';
+  };
+
+  if (loading) return (
+    <div className="container" style={{ marginTop: '2rem', textAlign: 'center' }}>
+      Loading products...
+    </div>
+  );
+  
+  if (error) return (
+    <div className="container" style={{ marginTop: '2rem', color: 'red', textAlign: 'center' }}>
+      {error}
+    </div>
+  );
+
+  return (
+    <div>
+      <nav className="nav">
+        <div className="container nav-content">
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Products</h1>
+          <button
+            onClick={goToCheckout}
+            className="btn btn-primary"
+            style={{ backgroundColor: '#10b981' }}
+          >
+            Cart ({cart.length})
+          </button>
+        </div>
+      </nav>
+
+      <div className="container">
+        <div className="grid">
+          {products.map((product) => (
+            <div key={product.id} className="card">
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="product-image"
+              />
+              <h2 className="product-title">{product.name}</h2>
+              <p className="product-price">${product.price.toFixed(2)}</p>
+              {product.description && (
+                <p style={{ color: '#666', marginBottom: '1rem' }}>{product.description}</p>
+              )}
+              <button
+                onClick={() => addToCart(product)}
+                className="btn btn-primary w-100"
               >
                 Add to Cart
               </button>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );
-};
+}
 
 export default ProductList;

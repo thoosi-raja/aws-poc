@@ -27,7 +27,10 @@ Parameters:
     Default: 1
   DynamoDBTableName:
     Type: String
-    Default: appointments
+    Default: Orders
+  DynamoDBTableName2:
+    Type: String
+    Default: Products
 
 Outputs:
   ECSCluster:
@@ -42,6 +45,9 @@ Outputs:
   DynamoDBTable:
     Description: "DynamoDB Table Name"
     Value: !Ref DynamoDBTableName
+  DynamoDBTable2:
+    Description: "DynamoDB Table Name 2"
+    Value: !Ref DynamoDBTableName2
   LoadBalancerDNS:
     Description: "Load Balancer DNS Name"
     Value: !GetAtt LoadBalancer.DNSName
@@ -59,6 +65,18 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref DynamoDBTableName
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DynamoDBTableName2
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
@@ -180,6 +198,15 @@ Resources:
                   - ecr:GetDownloadUrlForLayer
                   - ecr:BatchGetImage
                 Resource: "*"
+        - PolicyName: SESAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: "*"
         - PolicyName: CloudWatchLogsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -210,6 +237,8 @@ Resources:
           Environment:
             - Name: DYNAMODB_TABLE
               Value: !Ref DynamoDBTableName
+            - Name: DYNAMODB_TABLE2
+              Value: !Ref DynamoDBTableName2
           LogConfiguration:
             LogDriver: awslogs
             Options:
