@@ -73,7 +73,7 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
-  DynamoDBTable:
+  DynamoDBTable2:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref DynamoDBTableName2
@@ -186,7 +186,9 @@ Resources:
                   - dynamodb:Scan
                   - dynamodb:Query
                   - dynamodb:UpdateItem
-                Resource: !GetAtt DynamoDBTable.Arn
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !GetAtt DynamoDBTable2.Arn
         - PolicyName: ECRPullAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -231,7 +233,7 @@ Resources:
       TaskRoleArn: !GetAtt TaskExecutionRole.Arn 
       ContainerDefinitions:
         - Name: SpringBootContainer
-          Image: "877969058937.dkr.ecr.us-east-1.amazonaws.com/appointments/spring:latest"
+          Image: "286141279815.dkr.ecr.us-east-1.amazonaws.com/test/ecom:latest"
           PortMappings:
             - ContainerPort: !Ref ContainerPort
           Environment:
